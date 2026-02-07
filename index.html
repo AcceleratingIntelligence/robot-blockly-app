@@ -3,69 +3,216 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta charset="UTF-8">
-<title>🤖 Blockly Robot Programmer</title>
+<title>🤖 Blockly Robot</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#667eea">
 <script src="https://unpkg.com/blockly/blockly.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Optional: offline-storage.js for save/load (app will work without it) -->
+<script src="offline-storage.js" onerror="console.warn('offline-storage.js not found - save/load disabled')"></script>
 <style>
+/* ========================================
+   MODAL STYLES
+   ======================================== */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  z-index: 2000;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal.show {
+  display: flex;
+}
+
+.modal-content {
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f3f4f6;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #9ca3af;
+  transition: color 0.2s;
+}
+
+.modal-close:hover {
+  color: #374151;
+}
+
+.program-list {
+  list-style: none;
+  padding: 0;
+}
+
+.program-item {
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.2s;
+}
+
+.program-item:hover {
+  background: #f9fafb;
+  border-color: #6366f1;
+  transform: translateY(-1px);
+}
+
+.program-info {
+  flex: 1;
+}
+
+.program-name {
+  font-weight: bold;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.program-meta {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.program-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.program-action-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+  transition: all 0.2s;
+}
+
+.program-action-btn:hover {
+  transform: scale(1.05);
+}
+
+.btn-load {
+  background: #6366f1;
+  color: white;
+}
+
+.btn-load:hover {
+  background: #4f46e5;
+}
+
+.btn-delete {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.btn-delete:hover {
+  background: #fecaca;
+}
+
+/* Save Program Modal */
+.save-modal-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.save-modal-input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.save-modal-btn {
+  width: 100%;
+  padding: 12px;
+  background: #6366f1;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.save-modal-btn:hover {
+  background: #4f46e5;
+}
+
+.save-modal-btn:active {
+  transform: scale(0.98);
+}
+
+/* ========================================
+   MAIN LAYOUT STYLES
+   ======================================== */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   min-height: 100vh;
-  padding: 20px;
 }
 .container {
-  max-width: 1400px;
+  max-width: 100%;
   margin: 0 auto;
   background: white;
-  border-radius: 20px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-  overflow: hidden;
+  min-height: 100vh;
 }
 .header {
   background: linear-gradient(135deg, #4CAF50, #2196F3);
   color: white;
-  padding: 20px 30px;
+  padding: 15px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 15px;
 }
 .header h1 {
-  font-size: 28px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.install-btn {
-  background: rgba(255,255,255,0.2);
-  border: 2px solid white;
-  color: white;
-  padding: 10px 20px;
-  border-radius: 25px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: 0.3s;
-  display: none;
-}
-.install-btn:hover {
-  background: white;
-  color: #4CAF50;
+  font-size: 24px;
 }
 .connection-status {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 16px;
+  gap: 8px;
+  padding: 6px 12px;
   background: rgba(255,255,255,0.2);
   border-radius: 20px;
-  font-size: 14px;
+  font-size: 13px;
 }
 .status-dot {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: #ff5252;
   animation: pulse 2s infinite;
@@ -78,70 +225,125 @@ body {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }
 }
-.main-content {
-  display: grid;
-  grid-template-columns: 1fr 350px;
-  gap: 0;
-  height: calc(100vh - 180px);
-  min-height: 600px;
-}
-@media (max-width: 1024px) {
+
+/* Desktop Layout */
+@media (min-width: 769px) {
+  .tabs { display: none; }
+  
   .main-content {
-    grid-template-columns: 1fr;
-    height: auto;
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    height: calc(100vh - 60px);
   }
+  
+  #blocklyDiv {
+    width: 100%;
+    height: 100%;
+  }
+  
   .sidebar {
-    border-left: none !important;
-    border-top: 2px solid #e0e0e0;
+    border-left: 2px solid #e0e0e0;
+    overflow-y: auto;
+    background: #f5f5f5;
+  }
+  
+  .floating-run-btn { display: none !important; }
+}
+
+/* Mobile Layout */
+@media (max-width: 768px) {
+  .tabs {
+    display: flex;
+    background: white;
+    border-bottom: 2px solid #e0e0e0;
+  }
+  
+  .tab {
+    flex: 1;
+    padding: 12px;
+    background: none;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    color: #999;
+    font-weight: bold;
+  }
+  
+  .tab.active {
+    color: #4CAF50;
+    border-bottom: 3px solid #4CAF50;
+  }
+  
+  .main-content {
+    position: relative;
+  }
+  
+  #blocklyTab, .sidebar {
+    display: none;
+    height: calc(100vh - 120px);
+  }
+  
+  #blocklyTab.active, .sidebar.active {
+    display: block;
+  }
+  
+  #blocklyDiv {
+    width: 100%;
+    height: 100%;
+  }
+  
+  .sidebar {
+    overflow-y: auto;
+    background: #f5f5f5;
+  }
+  
+  .floating-run-btn {
+    display: none;
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    font-size: 24px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    cursor: pointer;
+    z-index: 1000;
+  }
+  
+  .floating-run-btn.show {
+    display: block;
+  }
+  
+  .floating-run-btn:active {
+    transform: scale(0.95);
   }
 }
-#blocklyDiv {
-  height: 100%;
-  width: 100%;
-}
-.sidebar {
-  border-left: 2px solid #e0e0e0;
-  display: flex;
-  flex-direction: column;
-  background: #f5f5f5;
-}
-.control-panel {
-  padding: 20px;
-  flex: 1;
-  overflow-y: auto;
-}
+
+/* Control Panel Styles */
 .control-section {
-  margin-bottom: 25px;
+  padding: 15px;
+  margin-bottom: 10px;
 }
 .control-section h3 {
   color: #333;
-  margin-bottom: 12px;
   font-size: 16px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  margin-bottom: 10px;
 }
 .button-grid {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 .control-btn {
-  padding: 14px 20px;
+  padding: 12px;
   border: none;
-  border-radius: 10px;
-  font-size: 16px;
+  border-radius: 8px;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-.control-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0,0,0,0.15);
 }
 .control-btn:active {
   transform: scale(0.95);
@@ -149,20 +351,15 @@ body {
 .btn-run {
   background: linear-gradient(135deg, #4CAF50, #45a049);
   color: white;
-  font-size: 18px;
+  font-size: 16px;
 }
 .btn-stop {
-  background: linear-gradient(135deg, #ff9800, #f57c00);
+  background: linear-gradient(135deg, #FFC107, #FFB300);
   color: white;
 }
 .btn-panic {
   background: linear-gradient(135deg, #f44336, #d32f2f);
   color: white;
-  animation: emergency-pulse 1.5s infinite;
-}
-@keyframes emergency-pulse {
-  0%, 100% { box-shadow: 0 4px 8px rgba(244, 67, 54, 0.3); }
-  50% { box-shadow: 0 4px 20px rgba(244, 67, 54, 0.6); }
 }
 .btn-secondary {
   background: #2196F3;
@@ -171,20 +368,16 @@ body {
 .btn-test {
   background: #9C27B0;
   color: white;
-  padding: 10px;
-  font-size: 14px;
 }
 .output-console {
   background: #1e1e1e;
   color: #0f0;
-  padding: 15px;
-  border-radius: 8px;
-  height: 200px;
+  padding: 10px;
+  border-radius: 5px;
+  height: 150px;
   overflow-y: auto;
   font-family: 'Courier New', monospace;
-  font-size: 13px;
-  line-height: 1.6;
-  margin-top: 10px;
+  font-size: 12px;
 }
 .robot-config {
   background: #fff;
@@ -213,69 +406,657 @@ body {
 .btn-example {
   background: #607D8B;
   color: white;
+  padding: 10px;
+  font-size: 14px;
+}
+
+/* ========================================
+   AI HELPER STYLES
+   ======================================== */
+.ai-helper-section {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.ai-helper-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  cursor: pointer;
+  user-select: none;
+}
+
+.ai-helper-header h3 {
+  color: white;
+  margin: 0;
+}
+
+.ai-toggle-icon {
+  font-size: 18px;
+  transition: transform 0.3s;
+}
+
+.ai-helper-header.collapsed .ai-toggle-icon {
+  transform: rotate(-90deg);
+}
+
+.ai-chat-content {
+  max-height: 500px;
+  transition: max-height 0.3s ease-out;
+  overflow: hidden;
+}
+
+.ai-chat-content.collapsed {
+  max-height: 0;
+}
+
+.ai-quick-questions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 12px;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.ai-quick-btn {
   padding: 8px 12px;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.ai-quick-btn:hover {
+  background: #f3f4f6;
+  border-color: #667eea;
+  transform: translateY(-1px);
+}
+
+.ai-chat-container {
+  position: relative;
+}
+
+.ai-chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 15px;
+  background: #e5ddd5;
+  height: 300px;
+  overflow-y: auto;
+}
+
+.ai-message {
+  max-width: 85%;
+  padding: 10px 14px;
+  font-size: 14px;
+  line-height: 1.4;
+  position: relative;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  animation: messagePop 0.2s ease-out;
+}
+
+.ai-message.assistant {
+  align-self: flex-start;
+  background: white;
+  color: #333;
+  border-radius: 0 12px 12px 12px;
+}
+
+.ai-message.user {
+  align-self: flex-end;
+  background: #dcf8c6;
+  color: #333;
+  border-radius: 12px 0 12px 12px;
+}
+
+.ai-chat-input-area {
+  background: #f0f0f0;
+  padding: 10px;
+}
+
+.ai-input-wrapper {
+  display: flex;
+  background: white;
+  border-radius: 25px;
+  padding: 5px 15px;
+  align-items: center;
+  border: 1px solid #ddd;
+}
+
+.ai-chat-input {
+  border: none !important;
+  outline: none !important;
+  flex: 1;
+  padding: 8px 5px;
+  font-size: 14px;
+  resize: none;
+  max-height: 100px;
+}
+
+.ai-send-btn {
+  background: none;
+  border: none;
+  color: #075e54;
+  font-size: 20px;
+  cursor: pointer;
+  padding-left: 10px;
+}
+
+.ai-send-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.typing-indicator {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: white;
+  border-radius: 0 12px 12px 12px;
+  width: fit-content;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.typing-indicator.show {
+  display: flex;
+}
+
+.ai-message-avatar {
+  font-size: 18px;
+}
+
+.typing-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.typing-dot {
+  width: 8px;
+  height: 8px;
+  background: #999;
+  border-radius: 50%;
+  animation: typingBounce 1.4s infinite;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typingBounce {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-10px); }
+}
+
+@keyframes messagePop {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+
+.ai-help-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(102, 126, 234, 0.3);
+}
+
+.ai-help-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+}
+
+.ai-help-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+#ai-remaining {
+  font-size: 11px;
+  opacity: 0.9;
+  margin-left: 4px;
+}
+
+/* Modal Backdrop */
+.ai-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Response Card */
+.ai-response-card {
+  background: white;
+  border-radius: 16px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 80vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Loading State */
+.ai-loading {
+  background: white;
+  border-radius: 16px;
+  padding: 40px;
+  text-align: center;
+  max-width: 300px;
+}
+
+/* Header */
+.ai-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ai-header h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.ai-header-warning {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.ai-header-error {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.ai-usage {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.usage-badge {
+  background: rgba(255, 255, 255, 0.25);
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* Body */
+.ai-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+  line-height: 1.6;
+  color: #374151;
+}
+
+.ai-body p {
+  margin: 0 0 12px 0;
+}
+
+.ai-body strong {
+  color: #667eea;
+  font-weight: 600;
+}
+
+.ai-body em {
+  font-style: italic;
+  color: #764ba2;
+}
+
+.ai-body pre {
+  background: #f3f4f6;
+  padding: 12px;
+  border-radius: 8px;
+  overflow-x: auto;
+  border-left: 4px solid #667eea;
+  margin: 12px 0;
+}
+
+.ai-body code {
+  font-family: 'Courier New', monospace;
   font-size: 13px;
 }
+
+/* Footer */
+.ai-footer {
+  padding: 16px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-close {
+  padding: 10px 24px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+
+.btn-close:hover {
+  background: #5568d3;
+}
+
+/* Loading Spinner */
+.spinner {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 16px;
+  border: 4px solid #f3f4f6;
+  border-top: 4px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Question Modal */
+.ai-question-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+}
+
+.ai-question-card {
+  background: white;
+  border-radius: 16px;
+  max-width: 500px;
+  width: 100%;
+  padding: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.ai-question-card h3 {
+  margin: 0 0 8px 0;
+  color: #667eea;
+  font-size: 18px;
+}
+
+.ai-question-card p {
+  margin: 0 0 16px 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+#ai-question-input {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  margin-bottom: 16px;
+}
+
+#ai-question-input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-submit,
+.btn-cancel {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-submit {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-submit:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-cancel {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.btn-cancel:hover {
+  background: #e5e7eb;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .ai-response-card {
+    max-width: 100%;
+    max-height: 90vh;
+  }
+
+  .ai-header h3 {
+    font-size: 16px;
+  }
+
+  .ai-body {
+    padding: 16px;
+    font-size: 14px;
+  }
+
+  .usage-badge {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+}
+
 </style>
 </head>
 <body>
+
+<!-- Load Modal -->
+<div id="loadModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>📂 My Programs</h2>
+      <button class="modal-close" onclick="closeLoadModal()">×</button>
+    </div>
+    <ul id="programList" class="program-list"></ul>
+  </div>
+</div>
+
+<!-- Save Modal -->
+<div id="saveModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>💾 Save Program</h2>
+      <button class="modal-close" onclick="closeSaveModal()">×</button>
+    </div>
+    <input type="text" id="programNameInput" class="save-modal-input" placeholder="Enter program name..." onkeypress="if(event.key==='Enter') confirmSave()">
+    <button class="save-modal-btn" onclick="confirmSave()">💾 Save</button>
+  </div>
+</div>
+
+<!-- Main Container -->
 <div class="container">
   <div class="header">
     <h1>🤖 Blockly Robot Programmer</h1>
-    <button class="install-btn" id="installBtn">📲 Install App</button>
-    <div class="connection-status">
-      <div class="status-dot" id="statusDot"></div>
-      <span id="statusText">Disconnected</span>
+    <div style="display: flex; align-items: center; gap: 15px;">
+      <div class="connection-status">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText">Disconnected</span>
+      </div>
+      <button onclick="handleLogout()" style="padding: 8px 16px; background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; cursor: pointer; font-size: 13px; font-weight: bold;">
+        Logout
+      </button>
     </div>
   </div>
-  
+
+  <!-- Tabs (Mobile Only) -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('blocks')">📦 Blocks</button>
+    <button class="tab" onclick="switchTab('controls')">🎮 Controls</button>
+  </div>
+
+  <!-- Main Content Area -->
   <div class="main-content">
-    <div id="blocklyDiv"></div>
-    
-    <div class="sidebar">
-      <div class="control-panel">
-        <div class="control-section">
-          <h3>🎮 Program Controls</h3>
-          <div class="button-grid">
-            <button class="control-btn btn-run" id="runBtn">▶️ Run Program</button>
-            <button class="control-btn btn-stop" id="stopBtn">⏹️ Stop</button>
-            <button class="control-btn btn-panic" id="panicBtn">🚨 EMERGENCY STOP</button>
+    <!-- Blockly Workspace -->
+    <div id="blocklyTab">
+      <div id="blocklyDiv"></div>
+    </div>
+
+    <!-- Control Sidebar -->
+    <div class="sidebar" id="controlsTab">
+      <!-- Program Controls -->
+      <div class="control-section">
+        <h3>🎮 Program Controls</h3>
+        <div class="button-grid">
+          <button class="control-btn btn-run" id="runBtn">▶️ Run Program</button>
+          <button class="control-btn btn-stop" id="stopBtn">⏹️ Stop</button>
+          <button class="control-btn btn-panic" id="panicBtn">🚨 EMERGENCY STOP</button>
+        </div>
+      </div>
+
+      <!-- Console Output -->
+      <div class="control-section">
+        <h3>📺 Console Output</h3>
+        <div class="output-console" id="console">Ready to program! 🚀</div>
+      </div>
+
+      <!-- AI Helper -->
+      <div class="control-section">
+        <div class="ai-helper-section">
+          <div class="ai-helper-header" onclick="toggleAIHelper()">
+            <h3>🤖 AI Helper</h3>
+            <span class="ai-toggle-icon">▼</span>
+          </div>
+          
+          <div class="ai-chat-content" id="aiChatContent">
+            <div class="ai-quick-questions">
+              <button class="ai-quick-btn" onclick="askAI('How do I make a square?')">🟦 Make square?</button>
+              <button class="ai-quick-btn" onclick="askAI('What is a loop?')">🔁 What's a loop?</button>
+              <button class="ai-quick-btn" onclick="askAI('How do I use variables?')">📊 Use variables?</button>
+              <button class="ai-quick-btn" onclick="askAI('Robot not moving!')">🛠️ Not moving?</button>
+            </div>
+            
+            <div class="ai-chat-container">
+              <div class="ai-chat-messages" id="aiChatMessages">
+                <div class="ai-message assistant">Hi! I'm your robot helper! 👋</div>
+              </div>
+            </div>
+
+            <div class="ai-chat-input-area">
+              <div class="ai-input-wrapper">
+                <textarea class="ai-chat-input" id="aiChatInput" placeholder="Ask me anything..."></textarea>
+                <button class="ai-send-btn" id="aiSendBtn" onclick="sendAIMessage()">➤</button>
+              </div>
+            </div>
           </div>
         </div>
+      </div>
 
-        <div class="control-section">
-          <h3>🔧 Quick Actions</h3>
-          <div class="button-grid">
-            <button class="control-btn btn-secondary" id="saveBtn">💾 Save</button>
-            <button class="control-btn btn-secondary" id="loadBtn">📂 Load</button>
-            <button class="control-btn btn-secondary" id="clearBtn">🗑️ Clear</button>
-          </div>
+      <!-- Quick Actions -->
+      <div class="control-section">
+        <h3>🔧 Quick Actions</h3>
+        <div class="button-grid">
+          <button class="control-btn btn-secondary" id="saveBtn">💾 Save</button>
+          <button class="control-btn btn-secondary" id="loadBtn">📂 Load</button>
+          <button class="control-btn btn-secondary" id="clearBtn">🗑️ Clear</button>
         </div>
+      </div>
 
-        <div class="control-section">
-          <h3>📚 Examples</h3>
-          <div class="examples-grid">
-            <button class="control-btn btn-example" onclick="loadExample('square')">Square</button>
-            <button class="control-btn btn-example" onclick="loadExample('zigzag')">Zig-Zag</button>
-            <button class="control-btn btn-example" onclick="loadExample('dance')">Dance</button>
-            <button class="control-btn btn-example" onclick="loadExample('counter')">Counter</button>
-          </div>
+      <!-- Examples -->
+      <div class="control-section">
+        <h3>📚 Examples</h3>
+        <div class="examples-grid">
+          <button class="control-btn btn-example" onclick="loadExample('square')">🔲 Square</button>
+          <button class="control-btn btn-example" onclick="loadExample('zigzag')">⚡ Zig-Zag</button>
+          <button class="control-btn btn-example" onclick="loadExample('dance')">💃 Dance</button>
+          <button class="control-btn btn-example" onclick="loadExample('counter')">🔢 Counter</button>
+          <button class="control-btn btn-example" onclick="loadExample('animations')">🎬 Animations</button>
+          <button class="control-btn btn-example" onclick="loadExample('radar')">📡 Radar</button>
+          <button class="control-btn btn-example" onclick="loadExample('progress')">📊 Progress</button>
+          <button class="control-btn btn-example" onclick="loadExample('treasure')" style="background:#ff1493;color:white;">💎 Treasure</button>
+          <button class="control-btn btn-example" onclick="loadExample('speedrun')" style="background:#ff1493;color:white;">🏃 Speed Run</button>
+
+      </div>
+
+      <!-- Test Connection -->
+      <div class="control-section">
+        <h3>🧪 Test Connection</h3>
+        <div class="button-grid">
+          <button class="control-btn btn-test" onclick="testConnection()">📡 Test Robot</button>
         </div>
+      </div>
 
-        <div class="control-section">
-          <h3>🧪 Test</h3>
-          <div class="button-grid">
-            <button class="control-btn btn-test" onclick="testConnection()">📡 Test Robot</button>
-          </div>
-        </div>
-
-        <div class="control-section">
-          <h3>📺 Console</h3>
-          <div class="output-console" id="console">Ready! 🚀</div>
-        </div>
-
+      <!-- Robot Config -->
+      <div class="control-section">
         <div class="robot-config">
-          <label>🌐 Robot IP:</label>
+          <label>🌐 Robot IP Address:</label>
           <input type="text" id="robotIP" value="http://192.168.4.1">
         </div>
       </div>
@@ -283,6 +1064,12 @@ body {
   </div>
 </div>
 
+<!-- Floating Run Button (Mobile) -->
+<button class="floating-run-btn" id="floatingRunBtn" onclick="runProgram()">▶️</button>
+
+<!-- Load the main application script -->
 <script src="app.js"></script>
+<script src="simple-ai-client.js"></script>
+
 </body>
 </html>
